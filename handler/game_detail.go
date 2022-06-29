@@ -45,12 +45,16 @@ func (h *GameDetailHandler) SearchGameDetail() gin.HandlerFunc {
 		query := c.Query("query")
 		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 		page, _ := strconv.Atoi(c.DefaultQuery("page", "0"))
+		sortBy := c.DefaultQuery("sort_by", "name")
+		sortOrder, _ := strconv.Atoi(c.DefaultQuery("sort_order", "1"))
 
 		gameDetails, err := h.GameDetailService.SearchGameDetail(
 			dto.SearchGameDetailRequest{
-				Query: query,
-				Limit: limit,
-				Page:  page,
+				Query:     query,
+				Limit:     limit,
+				Page:      page,
+				SortBy:    sortBy,
+				SortOrder: sortOrder,
 			},
 		)
 
@@ -61,5 +65,22 @@ func (h *GameDetailHandler) SearchGameDetail() gin.HandlerFunc {
 			return
 		}
 		c.JSON(200, gameDetails)
+	}
+}
+
+func (h *GameDetailHandler) GetGameDetailById() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		steamAppId, _ := strconv.Atoi(c.Param("id"))
+
+		gameDetail, err := h.GameDetailService.GetGameDetailById(dto.GetGameDetailByIdRequest{Id: steamAppId})
+
+		if err != nil {
+			c.JSON(500, gin.H{
+				"error": err.Error(),
+			})
+
+			return
+		}
+		c.JSON(200, gameDetail)
 	}
 }

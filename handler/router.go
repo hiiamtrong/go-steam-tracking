@@ -7,12 +7,14 @@ import (
 )
 
 func SetupRouter(app *gin.Engine) {
-	steamHandler := NewSteamHandler(service.NewSteamService())
-	app.GET("/", steamHandler.GetAll())
-	app.GET("/:id", steamHandler.GetGameDetailById())
 
 	gameDetailHandler := NewGameDetailHandler(service.NewGameDetailService(repository.GameDetailRepositoryInstance))
-
+	app.GET("/", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{
+			"message": "Pong",
+		})
+	})
 	app.GET("/game_detail", gameDetailHandler.GetAllGameDetail())
+	app.GET("/game_detail/:id", gameDetailHandler.GetGameDetailById())
 	app.GET("/game_detail/search", gameDetailHandler.SearchGameDetail())
 }

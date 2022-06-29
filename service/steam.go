@@ -9,9 +9,17 @@ import (
 	"github.com/hiiamtrong/golang-steam-tracking/model"
 )
 
-type Response struct {
+type ResponseV2 struct {
 	Applist struct {
 		Apps []model.Game
+	}
+}
+
+type ResponseV1 struct {
+	Applist struct {
+		Apps struct {
+			App []model.Game
+		}
 	}
 }
 
@@ -22,8 +30,8 @@ func NewSteamService() *SteamService {
 	return &SteamService{}
 }
 
-func (s *SteamService) GetAllGame() ([]model.Game, error) {
-	data, err := http.Get("https://api.steampowered.com/ISteamApps/GetAppList/v0002/")
+func (s *SteamService) GetAllGame(version string) ([]model.Game, error) {
+	data, err := http.Get("https://api.steampowered.com/ISteamApps/GetAppList/" + version)
 
 	if err != nil {
 		return nil, err
@@ -41,21 +49,31 @@ func (s *SteamService) GetAllGame() ([]model.Game, error) {
 		return nil, err
 	}
 
-	var res Response
+	var resv1 ResponseV1
+	var resv2 ResponseV2
 
-	newError := json.Unmarshal(body, &res)
+	if version == "v2" {
 
-	if newError != nil {
-		return nil, newError
+		newError := json.Unmarshal(body, &resv2)
+		if newError != nil {
+			return nil, newError
+		}
+
+		return resv2.Applist.Apps, nil
+	} else {
+		newError := json.Unmarshal(body, &resv1)
+		if newError != nil {
+			return nil, newError
+		}
+
+		return resv1.Applist.Apps.App, nil
 	}
-
-	return res.Applist.Apps, nil
 
 }
 
 func (s *SteamService) GetGameById(id string) (*model.GameDetail, error) {
 
-	data, err := http.Get(fmt.Sprintf("https://store.steampowered.com/api/appdetails?appids=%s", id))
+	data, err := http.Get(fmt.Sprintf("https://store.steampowered.com/api/appdetails?appids=%s&cc=vnd", id))
 
 	if err != nil {
 		return nil, err
@@ -102,10 +120,10 @@ func (s *SteamService) GetGameById(id string) (*model.GameDetail, error) {
 	return &gameDetail, nil
 }
 
-func (s *SteamService) GetGamesPrice(games []model.Game) (map[string]model.PriceOverview, error) {
+func (s *SteamService) GetGamesPrice(games []model.GameDetailLightW) (map[string]*model.PriceOverview, error) {
 	var appIds = ""
 	for _, game := range games {
-		appIds += fmt.Sprintf("%d,", game.AppId)
+		appIds += fmt.Sprintf("%d,", game.SteamAppId)
 	}
 	res, err := http.Get(fmt.Sprintf("https://store.steampowered.com/api/appdetails?appids=%s&filters=price_overview", appIds))
 
@@ -128,16 +146,20 @@ func (s *SteamService) GetGamesPrice(games []model.Game) (map[string]model.Price
 		return nil, jsonError
 	}
 
-	result := make(map[string]model.PriceOverview)
+	if resMap == nil {
+		return nil, fmt.Errorf("game not found")
+	}
+
+	result := make(map[string]*model.PriceOverview)
 
 	for _, game := range games {
-		gameById := resMap[fmt.Sprint(game.AppId)].(map[string]interface{})
+		gameById := resMap[fmt.Sprint(game.SteamAppId)].(map[string]interface{})
 		isSuccess := gameById["success"]
 		_, ok := gameById["data"].(map[string]interface{})
 		if isSuccess == true && ok {
 			var priceOverview model.PriceOverview
 			priceOverview.FromMap(gameById["data"].(map[string]interface{})["price_overview"].(map[string]interface{}))
-			result[fmt.Sprint(game.AppId)] = priceOverview
+			result[fmt.Sprint(game.SteamAppId)] = &priceOverview
 		}
 	}
 

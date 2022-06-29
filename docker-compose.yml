@@ -1,0 +1,48 @@
+version: "3.5"
+
+services:
+  server:
+    build: .
+    ports:
+      - "3001:3001"
+    networks:
+      - go-steam
+
+    entrypoint:
+      - ./server
+    container_name: go-steam-server
+    restart: always
+    depends_on:
+      - mongo_db
+
+  crawler:
+    build: .
+    networks:
+      - go-steam
+    entrypoint:
+      - ./crawler
+    container_name: go-steam-crawler
+    restart: always
+    depends_on:
+      - mongo_db
+
+  mongo_db:
+    env_file:
+      - .env
+    image: mongo:4.2-bionic
+    ports:
+      - "27017:27017"
+    networks:
+      - go-steam
+    container_name: go-steam-mongo
+    restart: always
+    volumes:
+      - mongo-data:/data/db
+    
+
+
+networks:
+  go-steam:
+
+volumes:
+  mongo-data:
