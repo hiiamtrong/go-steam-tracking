@@ -30,7 +30,7 @@ func main() {
 
 	c.AddFunc("10 00 * * *", insertAllGameTask)
 	c.AddFunc("15 00 * * *", insertAllGameDetailTask)
-	c.AddFunc("30 * * * *", crawlPriceHistory)
+	c.AddFunc("30,00 * * * *", crawlPriceHistory)
 
 	go c.Start()
 	signal.Notify(sig, os.Interrupt, os.Kill)
