@@ -249,15 +249,13 @@ func crawlPriceHistory() {
 	chunkGameDetails := lo.Chunk(gameDetails, 1000)
 
 	rs := make(map[string]*model.PriceOverview)
-	for index, chunk := range chunkGameDetails {
-		log.Println("Crawling price history for ", len(chunk), " games at index ", index, "/", len(chunkGameDetails))
+	for _, chunk := range chunkGameDetails {
+
 		chunkResult, err := steamService.GetGamesPrice(chunk)
 		if err != nil {
 			log.Println("History Error:", err.Error())
 			continue
 		}
-
-		log.Println("Crawled price history for ", len(chunk), " games at index ", index, "/", len(chunkGameDetails))
 		rs = mergePriceHistory(rs, chunkResult)
 	}
 
@@ -269,8 +267,6 @@ func crawlPriceHistory() {
 		if comparePriceOverview(game.PriceOverview, rs[fmt.Sprint(game.SteamAppId)]) {
 			continue
 		}
-
-		fmt.Println("Update price history for game: ", game.SteamAppId)
 
 		priceHistoryDocs = append(priceHistoryDocs, model.PriceHistory{
 			SteamAppId:    game.SteamAppId,
